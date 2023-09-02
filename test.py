@@ -39,59 +39,61 @@ def first_or_empty( s ):
 
 #-----------------------------
 
-before_call="""
-mov rdi, -1
-mov rsi, -1
+before_all="""
+%macro call 1
 mov rax, -1
-mov rcx, -1
-mov rdx, -1
-mov r8, -1
-mov r9, -1
-mov r10, -1
-mov r11, -1
 push rbx
 push rbp
 push r12 
 push r13 
 push r14 
 push r15 
-"""
-after_call="""
+call %1
 cmp r15, [rsp] 
-jne .convention_error
+jne convention_error
 pop r15
 cmp r14, [rsp] 
-jne .convention_error
+jne convention_error
 pop r14
 cmp r13, [rsp] 
-jne .convention_error
+jne convention_error
 pop r13
 cmp r12, [rsp] 
-jne .convention_error
+jne convention_error
 pop r12
 cmp rbp, [rsp] 
-jne .convention_error
+jne convention_error
 pop rbp
 cmp rbx, [rsp] 
-jne .convention_error
+jne convention_error
 pop rbx
+mov rdi, -1
+mov rsi, -1
+mov rcx, -1
+mov r8, -1
+mov r9, -1
+mov r10, -1
+mov r11, -1
+%endmacro
 
-jmp continue
+%include "lib.inc"
 
-.convention_error:
+global _start
+
+section .text
+convention_error:
     mov rax, 1
     mov rdi, 2
     mov rsi, err_calling_convention
-    mov rdx,  err_calling_convention.end - err_calling_convention
+    mov rdx, err_calling_convention.end - err_calling_convention
     syscall
     mov rax, 60
     mov rdi, -41
     syscall
+
 section .data
-err_calling_convention: db "You did not respect the calling convention! Check that you handled caller-saved and callee-saved registers correctly", 10
-.end:
-section .text
-continue:
+    err_calling_convention: db "You did not respect the calling convention! Check that you handled caller-saved and callee-saved registers correctly", 10
+    .end:
 """
 
 class IOLibraryTest(unittest.TestCase):
@@ -115,7 +117,7 @@ class IOLibraryTest(unittest.TestCase):
             return (exc.output, exc.returncode)
 
     def perform(self, fname, text, input):
-        self.compile(fname, text)
+        self.compile(fname, before_all + text)
         return self.launch(fname, input)
 
 
@@ -128,14 +130,9 @@ section .data
 str: db '""" + input + """', 0
 
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, str
     call string_length
-    """ + after_call + """
     mov rdi, rax
     mov rax, 60
     syscall
@@ -153,14 +150,9 @@ section .data
 str: db '""" + input + """', 0
 
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, str
     call print_string
-    """ + after_call + """
     xor rdi, rdi
     mov rax, 60
     syscall
@@ -179,17 +171,12 @@ arg1: db '""" + input + """', 0
 arg2: times """ + str(len(input) + 1) +  """ db  66
 
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, arg1
     mov rsi, arg2
     mov rdx, """ + str(len(input) + 1) + """
     call string_copy
 
-    """ + after_call + """
     mov rdi, arg2 
     call print_string
     mov rax, 60
@@ -213,11 +200,7 @@ arg1: db '""" + input + """', 0
 arg2: times """ + str(len(input)/2) +  """ db  66
 
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, arg1
     mov rsi, arg2
     mov rdx, """ + str(len(input)/2) + """
@@ -228,7 +211,6 @@ _start:
     call print_string
     jmp _exit
     .good:
-    """ + after_call + """
     mov rdi, arg2 
     call print_string
 _exit:
@@ -246,14 +228,9 @@ _exit:
         for input in inputs:
             text = """
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, '""" + input + """'
     call print_char
-    """ + after_call + """
     mov rax, 60
     xor rdi, rdi
     syscall
@@ -268,14 +245,9 @@ _start:
         for input in inputs:
             text = """
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, """ + input + """
     call print_uint
-    """ + after_call + """
     mov rax, 60
     xor rdi, rdi
     syscall
@@ -291,14 +263,9 @@ _start:
         for input in inputs:
             text = """
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, """ + input + """
     call print_int
-    """ + after_call + """
     mov rax, 60
     xor rdi, rdi
     syscall
@@ -313,13 +280,8 @@ _start:
         for input in inputs:
             text = """
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     call read_char
-    """ + after_call + """
     mov rdi, rax
     mov rax, 60
     syscall
@@ -341,15 +303,10 @@ section .data
 word_buf: times 20 db 0xca
 
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, word_buf
     mov rsi, 20 
     call read_word
-    """ + after_call + """
     mov rdi, rax
     call print_string
 
@@ -371,15 +328,10 @@ section .data
 word_buf: times 20 db 0xca
 
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, word_buf
     mov rsi, 20 
     call read_word
-    """ + after_call + """
     mov rax, 60
     mov rdi, rdx
     syscall
@@ -399,15 +351,10 @@ stub: times 5 db 0xca
 word_buf: times 20 db 0xca
 
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, word_buf
     mov rsi, 20 
     call read_word
-    """ + after_call + """
     mov rdi, rax
     mov rax, 60
     syscall
@@ -429,14 +376,9 @@ section .data
 input: db '""" + input  + """', 0
 
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, input
     call parse_uint
-    """ + after_call + """
     push rdx
     mov rdi, rax
     call print_uint
@@ -460,14 +402,9 @@ section .data
 input: db '""" + input  + """', 0
 
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, input
     call parse_int
-    """ + after_call + """
     push rdx
     mov rdi, rax
     call print_int
@@ -495,15 +432,10 @@ str1: db '""" + input + """',0
 str2: db '""" + input + """',0
 
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, str1
     mov rsi, str2
     call string_equals
-    """ + after_call + """
     mov rdi, rax
     mov rax, 60
     syscall
@@ -522,15 +454,10 @@ str1: db '""" + input + """',0
 str2: db '""" + input + """!!',0
 
 section .text
-
-%include "lib.inc"
-global _start
 _start:
-    """ + before_call + """
     mov rdi, str1
     mov rsi, str2
     call string_equals
-    """ + after_call + """
     mov rdi, rax
     mov rax, 60
     syscall
