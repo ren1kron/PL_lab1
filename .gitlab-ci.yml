@@ -6,7 +6,6 @@ stages:
 test:
   stage: test 
   script:
-    # - chmod +x ./test.py
     - python2 test.py
   artifacts:
     when: always
