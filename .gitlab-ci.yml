@@ -6,7 +6,8 @@ stages:
 test:
   stage: test 
   script:
-    - ./test.py
+    # - chmod +x ./test.py
+    - python2 test.py
   artifacts:
     when: always
     reports:
