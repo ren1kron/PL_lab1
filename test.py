@@ -11,7 +11,7 @@ from subprocess import CalledProcessError, Popen, PIPE
 #-------helpers---------------
 
 def starts_uint( s ):
-    matches = re.findall( '^\d+', s)
+    matches = re.findall('^\d+', s)
     if matches:
         return (int(matches[0]), len(matches[0]))
     else:
@@ -111,10 +111,10 @@ class IOLibraryTest(unittest.TestCase):
             p = Popen(['./'+fname], shell=None, stdin=PIPE, stdout=PIPE)
             (output, _) = p.communicate(input.encode())
             self.assertNotEqual(p.returncode, -11, 'segmentation fault')
-            return (output, p.returncode)
+            return (output.decode(), p.returncode)
         except CalledProcessError as exc:
             self.assertNotEqual(exc.returncode, -11, 'segmentation fault')
-            return (exc.output, exc.returncode)
+            return (exc.output.decode(), exc.returncode)
 
     def perform(self, fname, text, input):
         self.compile(fname, before_all + text)
@@ -158,7 +158,7 @@ _start:
     syscall
 """
             (output, code) = self.perform('print_string', text, input)
-            self.assertEqual(output.decode(), input, 'print_string(%s) printed wrong string: %s' % (repr(input), repr(output)))
+            self.assertEqual(output, input, 'print_string(%s) printed wrong string: %s' % (repr(input), repr(output)))
 
 
 
@@ -168,7 +168,7 @@ _start:
             text = """
 section .data
 arg1: db '""" + input + """', 0
-arg2: times """ + str(len(input) + 1) +  """ db  66
+arg2: times """ + str(len(input) + 1) + """ db  66
 
 section .text
 _start:
@@ -184,7 +184,7 @@ _start:
     syscall
 """
             (output, code) = self.perform('string_copy', text, input)
-            self.assertEqual(output.decode(), input, 'string_copy(%s) put wrong string into buffer: %s' % (repr(input), repr(output)))
+            self.assertEqual(output, input, 'string_copy(%s) put wrong string into buffer: %s' % (repr(input), repr(output)))
 
 
 
@@ -197,7 +197,7 @@ err_too_long_msg: db "string is too long", 10, 0
 
 section .data
 arg1: db '""" + input + """', 0
-arg2: times """ + str(len(input)//2) +  """ db  66
+arg2: times """ + str(len(input)//2) + """ db  66
 
 section .text
 _start:
@@ -219,7 +219,7 @@ _exit:
     syscall
 """
             (output, code) = self.perform('string_copy_too_long', text, input)
-            self.assertNotEqual(output.find(b'too long'), -1, 'string_copy(%s) should have failed, but returned: %s' % (repr(input), repr(output)))
+            self.assertNotEqual(output.find('too long'), -1, 'string_copy(%s) should have failed, but returned: %s' % (repr(input), repr(output)))
 
 
 
@@ -236,7 +236,7 @@ _start:
     syscall
 """
             (output, code) = self.perform('print_char', text, input)
-            self.assertEqual(output.decode(), input, 'print_char(%s) printed wrong char: %s' % (repr(input), repr(output)))
+            self.assertEqual(output, input, 'print_char(%s) printed wrong char: %s' % (repr(input), repr(output)))
 
 
 
@@ -254,7 +254,7 @@ _start:
 """
             (output, code) = self.perform('print_uint', text, input)
             uinput = str(unsigned_reinterpret(int(input)))
-            self.assertEqual(output.decode(), uinput, 'print_uint(%s) printed wrong number: %s, expected: %s' % (repr(input), repr(output), repr(uinput)))
+            self.assertEqual(output, uinput, 'print_uint(%s) printed wrong number: %s, expected: %s' % (repr(input), repr(output), repr(uinput)))
 
 
 
@@ -271,7 +271,7 @@ _start:
     syscall
 """
             (output, code) = self.perform('print_int', text, input)
-            self.assertEqual(output.decode(), input, 'print_int(%s) printed wrong number: %s' % (repr(input), repr(output)))
+            self.assertEqual(output, input, 'print_int(%s) printed wrong number: %s' % (repr(input), repr(output)))
 
 
 
@@ -316,7 +316,7 @@ _start:
 """
             (output, code) = self.perform('read_word', text, input)
             input_word = first_or_empty(input)
-            self.assertEqual(output.decode(), input_word, 'read_word(%s) put incorrect word in the buffer: %s, expected: %s' % (repr(input), repr(output), repr(input_word)))
+            self.assertEqual(output, input_word, 'read_word(%s) put incorrect word in the buffer: %s, expected: %s' % (repr(input), repr(output), repr(input_word)))
 
 
 
@@ -389,7 +389,7 @@ _start:
             (output, code) = self.perform('parse_uint', text, input)
             (input_num, input_len) = starts_uint(input)
 
-            self.assertEqual(output.decode(), str(input_num), 'parse_uint(%s) parsed wrong number: %s, expected: %s' % (repr(input), repr(output), repr(str(input_num))))
+            self.assertEqual(output, str(input_num), 'parse_uint(%s) parsed wrong number: %s, expected: %s' % (repr(input), repr(output), repr(str(input_num))))
             self.assertEqual(code, input_len, 'parse_uint(%s) returned wrong length: %d, expected: %d' % (repr(input), code, input_len))
 
 
@@ -416,9 +416,9 @@ _start:
             (input_num, input_len) = starts_int(input)
 
             if input_len == 0:
-                self.assertEqual(output.decode(), '0', 'parse_int(%s) should have failed, but parsed %s' % (repr(input), output))
+                self.assertEqual(output, '0', 'parse_int(%s) should have failed, but parsed %s' % (repr(input), output))
             else:
-                self.assertEqual(output.decode(), str(input_num), 'parse_int(%s) parsed wrong number: %s, expected: %s' % (repr(input), repr(output), repr(str(input_num))))
+                self.assertEqual(output, str(input_num), 'parse_int(%s) parsed wrong number: %s, expected: %s' % (repr(input), repr(output), repr(str(input_num))))
                 self.assertEqual(code, input_len, 'parse_int(%s) returned wrong length: %d, expected: %d' % (repr(input), code, input_len))
 
 

@@ -6,11 +6,8 @@ stages:
 test:
   stage: test
   script:
-    - dnf -y install python3
-    - dnf -y install python3-pip
-    - pip3 install xmlrunner
     - python3 test.py
   artifacts:
     when: always
-    paths:
-      - report.xml
+    reports:
+      junit: report.xml
