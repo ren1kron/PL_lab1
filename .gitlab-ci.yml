@@ -4,11 +4,10 @@ stages:
   - test
 
 test:
-  stage: test 
+  stage: test
   script:
-    - python2 test.py
+    - python3 test.py
   artifacts:
     when: always
     reports:
       junit: report.xml
-

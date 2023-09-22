@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 __unittest = True
 
@@ -32,7 +32,7 @@ def unsigned_reinterpret(x):
 
 def first_or_empty( s ):
     sp = s.split()
-    if sp == [] : 
+    if sp == [] :
         return ''
     else:
         return sp[0]
@@ -106,15 +106,15 @@ class IOLibraryTest(unittest.TestCase):
         self.assertEqual(subprocess.call( ['ld', '-o' , fname, fname+'.o'] ), 0, 'failed to link')
 
     def launch(self, fname, input):
-        output = ''
+        output = b''
         try:
             p = Popen(['./'+fname], shell=None, stdin=PIPE, stdout=PIPE)
-            (output, _) = p.communicate(input)
+            (output, _) = p.communicate(input.encode())
             self.assertNotEqual(p.returncode, -11, 'segmentation fault')
-            return (output, p.returncode)
+            return (output.decode(), p.returncode)
         except CalledProcessError as exc:
             self.assertNotEqual(exc.returncode, -11, 'segmentation fault')
-            return (exc.output, exc.returncode)
+            return (exc.output.decode(), exc.returncode)
 
     def perform(self, fname, text, input):
         self.compile(fname, before_all + text)
@@ -168,7 +168,7 @@ _start:
             text = """
 section .data
 arg1: db '""" + input + """', 0
-arg2: times """ + str(len(input) + 1) +  """ db  66
+arg2: times """ + str(len(input) + 1) + """ db  66
 
 section .text
 _start:
@@ -197,13 +197,13 @@ err_too_long_msg: db "string is too long", 10, 0
 
 section .data
 arg1: db '""" + input + """', 0
-arg2: times """ + str(len(input)/2) +  """ db  66
+arg2: times """ + str(len(input)//2) + """ db  66
 
 section .text
 _start:
     mov rdi, arg1
     mov rsi, arg2
-    mov rdx, """ + str(len(input)/2) + """
+    mov rdx, """ + str(len(input)//2) + """
     call string_copy
     test rax, rax
     jnz .good
