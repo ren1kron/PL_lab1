@@ -41,6 +41,10 @@ def first_or_empty( s ):
 
 before_all="""
 %macro call 1
+mov rax, rsp
+and rax, 15
+test rax, rax
+jz alignment_error
 mov rax, -1
 push rbx
 push rbp
@@ -76,11 +80,21 @@ mov r10, -1
 mov r11, -1
 %endmacro
 
-%include "lib.inc"
+%include "lib.asm"
 
 global _start
 
 section .text
+alignment_error:
+    mov rax, 1
+    mov rdi, 2
+    mov rsi, err_alignment_error
+    mov rdx, err_alignment_error.end - err_alignment_error
+    syscall
+    mov rax, 60
+    mov rdi, -41
+    syscall
+
 convention_error:
     mov rax, 1
     mov rdi, 2
@@ -92,6 +106,8 @@ convention_error:
     syscall
 
 section .data
+    err_alignment_error: db "You did not respect the calling convention! Check that you align stack before call correctly", 10
+    .end:
     err_calling_convention: db "You did not respect the calling convention! Check that you handled caller-saved and callee-saved registers correctly", 10
     .end:
 """
@@ -132,7 +148,9 @@ str: db '""" + input + """', 0
 section .text
 _start:
     mov rdi, str
+    sub rsp, 8
     call string_length
+    add rsp, 8
     mov rdi, rax
     mov rax, 60
     syscall
@@ -151,8 +169,10 @@ str: db '""" + input + """', 0
 
 section .text
 _start:
+    sub rsp, 8
     mov rdi, str
     call print_string
+    add rsp, 8
     xor rdi, rdi
     mov rax, 60
     syscall
@@ -172,13 +192,14 @@ arg2: times """ + str(len(input) + 1) + """ db  66
 
 section .text
 _start:
+    sub rsp, 8
     mov rdi, arg1
     mov rsi, arg2
     mov rdx, """ + str(len(input) + 1) + """
     call string_copy
-
     mov rdi, arg2 
     call print_string
+    add rsp, 8
     mov rax, 60
     xor rdi, rdi
     syscall
@@ -201,6 +222,7 @@ arg2: times """ + str(len(input)//2) + """ db  66
 
 section .text
 _start:
+    sub rsp, 8
     mov rdi, arg1
     mov rsi, arg2
     mov rdx, """ + str(len(input)//2) + """
@@ -214,6 +236,7 @@ _start:
     mov rdi, arg2 
     call print_string
 _exit:
+    add rsp, 8
     mov rax, 60
     xor rdi, rdi
     syscall
@@ -229,8 +252,10 @@ _exit:
             text = """
 section .text
 _start:
+    sub rsp, 8
     mov rdi, '""" + input + """'
     call print_char
+    add rsp, 8
     mov rax, 60
     xor rdi, rdi
     syscall
@@ -246,8 +271,10 @@ _start:
             text = """
 section .text
 _start:
+    sub rsp, 8
     mov rdi, """ + input + """
     call print_uint
+    add rsp, 8
     mov rax, 60
     xor rdi, rdi
     syscall
@@ -264,8 +291,10 @@ _start:
             text = """
 section .text
 _start:
+    sub rsp, 8
     mov rdi, """ + input + """
     call print_int
+    add rsp, 8
     mov rax, 60
     xor rdi, rdi
     syscall
@@ -281,7 +310,9 @@ _start:
             text = """
 section .text
 _start:
+    sub rsp, 8
     call read_char
+    add rsp, 8
     mov rdi, rax
     mov rax, 60
     syscall
@@ -304,12 +335,13 @@ word_buf: times 20 db 0xca
 
 section .text
 _start:
+    sub rsp, 8
     mov rdi, word_buf
     mov rsi, 20 
     call read_word
     mov rdi, rax
     call print_string
-
+    add rsp, 8
     mov rax, 60
     xor rdi, rdi
     syscall
@@ -329,9 +361,11 @@ word_buf: times 20 db 0xca
 
 section .text
 _start:
+    sub rsp, 8
     mov rdi, word_buf
     mov rsi, 20 
     call read_word
+    add rsp, 8
     mov rax, 60
     mov rdi, rdx
     syscall
@@ -352,9 +386,11 @@ word_buf: times 20 db 0xca
 
 section .text
 _start:
+    sub rsp, 8
     mov rdi, word_buf
     mov rsi, 20 
     call read_word
+    add rsp, 8
     mov rdi, rax
     mov rax, 60
     syscall
@@ -377,11 +413,14 @@ input: db '""" + input  + """', 0
 
 section .text
 _start:
+    sub rsp, 8
     mov rdi, input
     call parse_uint
+    add rsp, 8
     push rdx
     mov rdi, rax
     call print_uint
+    add rsp, 8
     mov rax, 60
     pop rdi
     syscall
@@ -403,11 +442,14 @@ input: db '""" + input  + """', 0
 
 section .text
 _start:
+    sub rsp, 8
     mov rdi, input
     call parse_int
+    add rsp, 8
     push rdx
     mov rdi, rax
     call print_int
+    add rsp, 8
     mov rax, 60
     pop rdi
     syscall
@@ -433,9 +475,11 @@ str2: db '""" + input + """',0
 
 section .text
 _start:
+    sub rsp, 8
     mov rdi, str1
     mov rsi, str2
     call string_equals
+    add rsp, 8
     mov rdi, rax
     mov rax, 60
     syscall
@@ -455,9 +499,11 @@ str2: db '""" + input + """!!',0
 
 section .text
 _start:
+    sub rsp, 8
     mov rdi, str1
     mov rsi, str2
     call string_equals
+    add rsp, 8
     mov rdi, rax
     mov rax, 60
     syscall
