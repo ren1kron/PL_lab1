@@ -416,11 +416,9 @@ _start:
     sub rsp, 8
     mov rdi, input
     call parse_uint
-    add rsp, 8
-    push rdx
+    mov [rsp], rdx
     mov rdi, rax
     call print_uint
-    add rsp, 8
     mov rax, 60
     pop rdi
     syscall
@@ -445,11 +443,9 @@ _start:
     sub rsp, 8
     mov rdi, input
     call parse_int
-    add rsp, 8
-    push rdx
+    mov [rsp], rdx
     mov rdi, rax
     call print_int
-    add rsp, 8
     mov rax, 60
     pop rdi
     syscall
