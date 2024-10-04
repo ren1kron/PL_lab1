@@ -1,10 +1,25 @@
 section .text
  
+; ASCII symbols
+%define space_sym   0x20
+%define tab_sym     0x9
+%define newline_sym 0xA
+
+; sys constants
+%define sys_exit 60
+%define sys_write 1
+
+; descriptors
+%define stdin 0
+%define stdout 1
+%define stderr 2
+
+ 
  
 ; Принимает код возврата и завершает текущий процесс
-exit: 
-    xor rax, rax,
-    ret 
+exit: ; done (ok)
+    mov  rax, sys_exit
+    syscall
 
 ; Принимает указатель на нуль-терминированную строку, возвращает её длину
 string_length:
