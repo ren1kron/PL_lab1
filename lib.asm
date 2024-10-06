@@ -37,9 +37,25 @@ print_char:
     ret
 
 ; Переводит строку (выводит символ с кодом 0xA)
-print_newline:
-    xor rax, rax
+print_newline: ; done (ok)
+    mov rdi, newline_sym
+    ; where is no ret here
+    ; so it is like we called print_char with '\n' in rdi
+
+; Принимает код символа и выводит его в stdout
+print_char: ; done (ok)
+    push rdi
+
+    mov rax, sys_write
+    mov rdi, stdout
+    mov rsi, rsp
+    mov rdx, 1 ; length of string to output - 1, because it is just 1 char
+    syscall
+    pop rdi
+
     ret
+
+
 
 ; Выводит беззнаковое 8-байтовое число в десятичном формате 
 ; Совет: выделите место в стеке и храните там результаты деления
