@@ -1,5 +1,24 @@
 section .text
 
+global exit
+
+global print_string
+global print_char
+global print_newline
+global print_uint
+global print_int
+
+global string_length
+global string_equals
+global string_copy
+
+global read_char
+global read_word
+
+global parse_uint
+global parse_int
+
+
 ; ASCII symbols
 %define space_sym   0x20
 %define tab_sym     0x9
@@ -15,6 +34,12 @@ section .text
 %define stdout 1
 %define stderr 2
 
+;===================================================================================
+;
+; callee-saved: rbx, rbp, rsp, r12-r15
+; caller-saved: all other
+;
+;===================================================================================
  
  
 ; Принимает код возврата и завершает текущий процесс
@@ -111,14 +136,14 @@ string_equals: ; done (ok)
         ret
 
 ; Читает один символ из stdin и возвращает его. Возвращает 0 если достигнут конец потока
-read_char:
+read_char: ; done (ok)
     ; mov rax, sys_read   ; sys_read == 0, it is more effective to write 0 in 'rax' by 'xor' 
     xor rax, rax        ; 
 
-    ; mov rdi, stdin      ; stdin == 0, same story as with rax
-    xor rdi, rdi        ; 
+    push ax             ; allocate buffer (we will use stack as buffer)
 
-    push ax             ; allocate buffer
+    ; mov rdi, stdin      ; stdin == 0, same story as with rax
+    xor rdi, rdi        ;  
 
     mov rsi, rsp      ; rsp now points at our buffer
     mov rdx, 1          ; how much do we read? - 1 byte
@@ -135,8 +160,86 @@ read_char:
 ; При неудаче возвращает 0 в rax
 ; Эта функция должна дописывать к слову нуль-терминатор
 
-read_word:
-    ret
+read_word: ; done (ok)
+; rdi - buffer address, rsi - buffer size
+; rax - word size, rdx - word length
+
+    ; xor rax, rax
+    ; xor r8, r8
+
+    test rsi, rsi
+    jz .fail ; fail if word length <= 0
+
+    mov r8, rdi     ; buffer address
+    mov r9, rsi     ; buffer size
+    xor r10, r10    ; char counter
+
+    
+    .space_skip:
+            ; sub rsp, 8
+            push r8
+            push r9
+            push r10
+        call read_char  ; now char in 'rax'
+            ; add rsp, 8
+            pop r10
+            pop r9
+            pop r8
+
+        cmp al, 0x20    ; skip space
+        je .space_skip  ;
+        cmp al, 0x9     ; skip '\t'
+        je .space_skip  ;
+        cmp al, 0xA     ; skip '\n'
+        je .space_skip  ;
+        
+        test al, al     ; if there is null-term - fail
+        jz .fail
+
+    xor r10, r10
+    .read:
+        cmp r10, r9         ; if the end of buffer reached ->
+        je .fail            ; fail
+
+        mov byte[r8 + r10], al  ; put char in buffer 
+
+        test al, al         ; readed char - EOF? => return
+        je .success         ; 
+
+        inc r10             ; else read next char
+
+            ; sub rsp, 8
+            push r8
+            push r9
+            push r10
+        call read_char
+            ; add rsp, 8
+            pop r10
+            pop r9
+            pop r8
+
+        cmp rax, 0x20		; sym == ' '? -> word ended
+		je .success
+
+        cmp rax, 0xA		; sym == '\n'? -> word ended
+		je .success
+		
+		cmp rax, 0x9		; sym == '\t'? -> word ended
+		je .success
+
+
+        jmp .read           
+
+    .success:
+        mov byte[r8 + r10], 0
+        mov rdx, r10
+        mov rax, r8
+        ret
+        
+    .fail:
+        xor rax, rax
+        xor rdx, rdx
+        ret
  
 
 ; Принимает указатель на строку, пытается
