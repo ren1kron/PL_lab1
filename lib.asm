@@ -37,13 +37,19 @@ string_length: ; done (ok)
 
 
 ; Принимает указатель на нуль-терминированную строку, выводит её в stdout
-print_string:
-    xor rax, rax
-    ret
+print_string: ; done (ok)
+    push rdi            ; save rdi (caller-saved)
+    call string_length  ; put string length in rax
+    pop rdi             ; restore rdi
+    
+    mov rdx, rax        ; put string length in rdx
+    mov rsi, rdi        ; put string adress in rsi
 
-; Принимает код символа и выводит его в stdout
-print_char:
-    xor rax, rax
+    mov rax, sys_write  ; put code for write syscall in rax
+    mov rdi, stdout     ; put stdout descriptor in rdi
+
+    syscall
+    
     ret
 
 ; Переводит строку (выводит символ с кодом 0xA)
