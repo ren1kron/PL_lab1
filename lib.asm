@@ -284,8 +284,29 @@ read_word: ; done (ok)
 ; Возвращает в rax: число, rdx : его длину в символах
 ; rdx = 0 если число прочитать не удалось
 parse_uint:
+    xor rsi, rsi
     xor rax, rax
-    ret
+    mov r11, 10
+    xor rcx, rcx
+    xor rdx, rdx
+
+    .read_num:
+        mov cl, byte[rsi + rdi]
+
+        cmp cl, '9'             ; Check if sym is num
+        ja .ret
+        sub cl, '0'
+        jb .ret
+
+        mul r11
+        add rax, rcx
+
+        inc rsi
+        jmp .read_num
+
+    .ret:
+        mov rdx, rsi
+        ret
 
 
 
@@ -295,13 +316,56 @@ parse_uint:
 ; Если есть знак, пробелы между ним и числом не разрешены.
 ; Возвращает в rax: число, rdx : его длину в символах (включая знак, если он был) 
 ; rdx = 0 если число прочитать не удалось
-parse_int:
-    xor rax, rax
+parse_int: ; done (ok)
+    mov al, byte[rdi]
+    cmp al, '-'
+    je .neg
+    cmp al, '+'
+    jne parse_uint
+
+    .neg:
+        push rdi
+        inc rdi
+        call parse_uint
+        pop rdi
+
+        cmp byte[rdi], '+'
+        je .skip_invertion
+        neg rax
+
+        .skip_invertion:
+            test rdx, rdx
+            je .error
+            
+            inc rdx
+        
+        .error:
+            ret
+
     ret 
 
 ; Принимает указатель на строку, указатель на буфер и длину буфера
 ; Копирует строку в буфер
 ; Возвращает длину строки если она умещается в буфер, иначе 0
-string_copy:
-    xor rax, rax
-    ret
+string_copy: ; done (ok)
+    push rdi            ; ''
+    push rsi            ; save caller-saved registers 
+    push rdx            ; ''
+    call string_length      
+    pop rdx
+    pop rdi
+    pop rsi
+
+    cmp rax, rdx
+    jae .error       ; buffer smaller then string length? -> return 0
+    mov rcx, rax
+
+    rep movsb
+
+    .end:
+        mov byte[rdi], 0
+        ret
+    .error:
+        xor rax, rax
+        ret
+
