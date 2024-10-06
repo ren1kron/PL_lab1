@@ -8,6 +8,7 @@ section .text
 ; sys constants
 %define sys_exit 60
 %define sys_write 1
+%define sys_read 0
 
 ; descriptors
 %define stdin 0
@@ -111,7 +112,19 @@ string_equals: ; done (ok)
 
 ; Читает один символ из stdin и возвращает его. Возвращает 0 если достигнут конец потока
 read_char:
-    xor rax, rax
+    ; mov rax, sys_read   ; sys_read == 0, it is more effective to write 0 in 'rax' by 'xor' 
+    xor rax, rax        ; 
+
+    ; mov rdi, stdin      ; stdin == 0, same story as with rax
+    xor rdi, rdi        ; 
+
+    push ax             ; allocate buffer
+
+    mov rsi, rsp      ; rsp now points at our buffer
+    mov rdx, 1          ; how much do we read? - 1 byte
+
+    syscall             ; 
+    pop ax              ;  accumulator <- char from buffer
     ret 
 
 ; Принимает: адрес начала буфера, размер буфера
