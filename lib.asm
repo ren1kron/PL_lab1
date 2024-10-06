@@ -98,18 +98,55 @@ print_char: ; done (ok)
     ret
 
 
+; Выводит знаковое 8-байтовое число в десятичном формате 
+print_int: ; done (ok)
+    mov rax, rdi
+
+    test rax, rax       ; set flags
+    jns print_uint      ; if num > 0 - print as unsigned
+
+    ; print minus part
+
+        push rdi        ; save our num
+        mov rdi, '-'    ; put there '-' to print it
+        call print_char ; print it )
+
+        pop rdi         ; get our num back
+        neg rdi         ; and make num unsigned/positive
+
+    ; then print_uint will be executed
 
 ; Выводит беззнаковое 8-байтовое число в десятичном формате 
 ; Совет: выделите место в стеке и храните там результаты деления
 ; Не забудьте перевести цифры в их ASCII коды.
-print_uint:
-    xor rax, rax
-    ret
+print_uint: ; done (ok)
+; rdi - число для вывода
+    mov rax, rdi        ; put number to divide in rax
+    mov r11, 10         ; r11 <- divider
 
-; Выводит знаковое 8-байтовое число в десятичном формате 
-print_int:
-    xor rax, rax
-    ret
+    push 0              ; put null-terminator for proper output (now rsp%16==0)
+    mov rdi, rsp        ; save old rsp
+    sub rsp, 32         ; allocate buffer for string (rsp%16 == 0)
+
+    .div10:
+        xor rdx, rdx    ; clear rdx before div
+        div r11         
+        add dl, '0'     ; turn num to ASCII equivalent (char)
+
+        dec rdi         ; save char 
+        mov [rdi], dl   ;on stack
+        
+        test rax, rax
+        jz .print_num
+
+        jmp .div10
+
+    .print_num:
+        call print_string
+
+        add rsp, 32 ; (rsp%16 == 0)
+        pop rax     ; (rsp%16 == 8 (ret address on top of stack now))
+        ret
 
 ; Принимает два указателя на нуль-терминированные строки, возвращает 1 если они равны, 0 иначе
 string_equals: ; done (ok)
