@@ -1,5 +1,5 @@
 section .text
- 
+
 ; ASCII symbols
 %define space_sym   0x20
 %define tab_sym     0x9
@@ -86,9 +86,28 @@ print_int:
     ret
 
 ; Принимает два указателя на нуль-терминированные строки, возвращает 1 если они равны, 0 иначе
-string_equals:
+string_equals: ; done (ok)
+    ; rdi: points to string1 current byte
+    ; rsi: points to string2 current byte
     xor rax, rax
-    ret
+    .loop:
+        mov r8b, byte [rdi]
+        cmp r8b, byte [rsi]
+        ; cmp byte [rdi], byte [rsi] ; compare chars
+        jne .not_equals     ; not equals? -> return 0
+                            ; ''
+                            ; else
+        cmp byte [rdi], 0   ; char == 0?
+        je .equals          ; end of strings - return 1
+                            ;
+        inc rdi             ; esle increment rdi
+        inc rsi             ; and rsi
+        jmp .loop           ; and continue cycle
+
+    .equals:
+        inc rax ; make rax == 1
+    .not_equals:
+        ret
 
 ; Читает один символ из stdin и возвращает его. Возвращает 0 если достигнут конец потока
 read_char:
