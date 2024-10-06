@@ -22,9 +22,19 @@ exit: ; done (ok)
     syscall
 
 ; Принимает указатель на нуль-терминированную строку, возвращает её длину
-string_length:
-    xor rax, rax
-    ret
+string_length: ; done (ok)
+    xor rax, rax          ; clear rax
+
+    .loop:
+        cmp byte[rdi + rax], 0 ; char on [rdi + rax] == 0?
+        je .done               ; we found end of string
+        inc rax                ; else increment rax
+        jmp .loop              ; and continue cycle
+
+    .done:
+        ret                    ; 
+    
+
 
 ; Принимает указатель на нуль-терминированную строку, выводит её в stdout
 print_string:
