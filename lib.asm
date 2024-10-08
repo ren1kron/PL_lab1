@@ -19,11 +19,6 @@ global parse_uint
 global parse_int
 
 
-; ASCII symbols
-%define space_sym   0x20
-%define tab_sym     0x9
-%define newline_sym 0xA
-
 ; sys constants
 %define sys_exit 60
 %define sys_write 1
@@ -66,10 +61,11 @@ string_length: ; done (ok)
 print_string: ; done (ok)
     push rdi            ; save rdi (caller-saved)
     call string_length  ; put string length in rax
-    pop rdi             ; restore rdi
+    ; pop rdi             ; restore rdi
+    pop rsi             ; we'll mov rdi to rsi anyway
     
     mov rdx, rax        ; put string length in rdx
-    mov rsi, rdi        ; put string adress in rsi
+    ; mov rsi, rdi        ; put string adress in rsi
 
     mov rax, sys_write  ; put code for write syscall in rax
     mov rdi, stdout     ; put stdout descriptor in rdi
@@ -80,7 +76,7 @@ print_string: ; done (ok)
 
 ; Переводит строку (выводит символ с кодом 0xA)
 print_newline: ; done (ok)
-    mov rdi, newline_sym
+    mov rdi, `\n`
     ; where is no ret here
     ; so it is like we called print_char with '\n' in rdi
 
@@ -223,11 +219,11 @@ read_word: ; done (ok)
             pop r9
             pop r8
 
-        cmp al, 0x20    ; skip space
+        cmp al, ' '    ; skip space
         je .space_skip  ;
-        cmp al, 0x9     ; skip '\t'
+        cmp al, `\t`     ; skip '\t'
         je .space_skip  ;
-        cmp al, 0xA     ; skip '\n'
+        cmp al, `\n`     ; skip '\n'
         je .space_skip  ;
         
         test al, al     ; if there is null-term - fail
@@ -255,13 +251,13 @@ read_word: ; done (ok)
             pop r9
             pop r8
 
-        cmp rax, 0x20		; sym == ' '? -> word ended
+        cmp rax, ` `		; sym == ' '? -> word ended
 		je .success
 
-        cmp rax, 0xA		; sym == '\n'? -> word ended
+        cmp rax, `\n`		; sym == '\n'? -> word ended
 		je .success
 		
-		cmp rax, 0x9		; sym == '\t'? -> word ended
+		cmp rax, `\t`		; sym == '\t'? -> word ended
 		je .success
 
 
@@ -284,19 +280,19 @@ read_word: ; done (ok)
 ; Возвращает в rax: число, rdx : его длину в символах
 ; rdx = 0 если число прочитать не удалось
 parse_uint:
-    xor rsi, rsi
+    xor rsi, rsi                ; rdx used for 'mul' so we need another reg as counter
     xor rax, rax
-    mov r11, 10
+    mov r11, 10                 ; r11 <- divider
     xor rcx, rcx
-    xor rdx, rdx
+    xor rdx, rdx                ;
 
     .read_num:
         mov cl, byte[rsi + rdi]
 
         cmp cl, '9'             ; Check if sym is num
-        ja .ret
-        sub cl, '0'
-        jb .ret
+        ja .ret                 ;
+        sub cl, '0'             ;
+        jb .ret                 ;
 
         mul r11
         add rax, rcx
